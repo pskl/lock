@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+<title>Click based authentication</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha256-7s5uDGW3AHqw6xtJmNNtr+OBRJUlgkNJEo78P4b0yRw= sha512-nNo+yCHEyn0smMxSswnf/OnX6/KwJuZTlNZBjauKhTK0c+zT+q5JOCx0UFhXQ6rJR9jg6Es8gPuD2uZcYDLqSw==" crossorigin="anonymous">
+<link rel="stylesheet" href="animate.css">
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+<style>
+  html, body {
+    height: 100%;
+    margin: 20px;
+  }
+  @media (max-width: 600px) {
+    body {
+      font-family: Tahoma;
+      font-size: 2em;
+    }
+  }
+  @media (min-width: 600px) {
+    body {
+      font-family: Verdana;
+      font-size: 3em;
+    }
+  }
+  .sign-zone {
+    border: solid;
+    width: 100%;
+    height: 50%;
+    position: relative;
+    z-index: 2;
+  }
+  p {
+    padding: 5px;
+    text-align: center;
+  }
+  .red {
+    background-color: #f28e8e;
+  }
+  .green {
+    background-color: #cdf4d2;
+  }
+</style>
+<script>
+  var app = angular.module('app',[]);
+  app.constant('TEXT', {
+      welcome : 'Authenticate yourself with 3 clicks in the above area',
+      success : 'Authentication successful',
+      failure : 'Authentication failed, try again.'
+  });
+  app.config(['$httpProvider', function($httpProvider) {
+        $httpProvider.defaults.useXDomain = true;
+        delete $httpProvider.defaults.headers.common['X-Requested-With'];
+  }]);
+  app.controller('CanvasController', ['$scope', '$http', '$timeout', 'TEXT', function($scope, $http, $timeout, TEXT) {
+    $scope.clicks = [];
+    $scope.message = TEXT.welcome;
+    $scope.addOnClick = function(event) {
+      if ($scope.clicks.length == 2) {
+        pushClick(event);
+        $http.post('http://localhost:3000/checkSignature', $scope.clicks).
+          then(function(response) {
+            if(response.data == true){
+              $scope.message = TEXT.success;
+              $scope.animation = 'bounceIn';
+              $scope.color = 'green';
+            } else {
+              $scope.message = TEXT.failure;
+              $scope.animation = 'wobble';
+              $scope.color = 'red';
+            }
+            resetAll();
+          }, function(response) {
+            $scope.message = 'request failed';
+        });
+      }
+      if ($scope.clicks.length < 2) {
+        pushClick(event);
+      }
+    };
+    function pushClick(event){
+      $scope.clicks.push({
+          'x': event.offsetX,
+          'y': event.offsetY
+      });
+    }
+    function resetAll(){
+      $timeout(function(){
+        $scope.animation = ' ';
+        $scope.color = ' ';
+        $scope.message = TEXT.welcome
+        $scope.clicks = [];
+      }, 1500);
+    }
+  }]);
+</script>
+</head>
+
+<body ng-controller='CanvasController'>
+  <canvas class='sign-zone' ng-click='addOnClick($event)' ng-class='color'>
+  </canvas>
+  <p class='animated' ng-class='animation'>{{message}}</p>
+  <p class='counter' ng-show="clicks.length > 0">{{clicks.length}}</div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+</body>
+
+</html>
